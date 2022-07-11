@@ -1,7 +1,5 @@
 #! /usr/bin/python
-from codecs import BOM32_BE
 import sys
-from tkinter import N
 import numpy as np
 #np.__version__
 
