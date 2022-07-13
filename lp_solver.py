@@ -1,5 +1,7 @@
 #! /usr/bin/python
 from cgi import print_directory
+from hashlib import new
+from msilib.schema import BBControl
 import sys
 import numpy as np
 import fileinput
@@ -8,6 +10,7 @@ import fileinput
 
 
 def main():
+    print("-------------------------------------------------------------------------------------------")
     c,A,b, var_num = read_file()
     B = [] #initial B = all constrains
     N = [] #initial N = all vars
@@ -60,26 +63,21 @@ def read_file():
     A = np.array(constrain_function_list)
     return c, A, b, var_num
     
-def dual_simplex(A, b, c , B, N):
-    ZB = 0 
-    AB = get_matrix_A(A,B)
-    AB_inverse = np.linalg.inv(AB) 
-    AN = get_matrix_A(A,N)
-    cB = get_matrix_C(c,B)
-    cN = get_matrix_C(c,N)
-    ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
-    #ZN = np.subtract(np.dot(np.matmul(AB_inverse,AN),cB),cN)
-    # print(ZN)
-    return 0
-
 def primal_simplex(A, b, c , B, N):
     #compute inital value of X
     
     AB = get_matrix_A(A,B)
     XB = np.matmul(np.linalg.inv(AB), b)
-    
-    # print(XB)
-    XN = 0
+    X = []
+    XB_count = 0
+    for i in range(len(B) + len(N)):
+        if i in N:
+            X.append(0.0)
+        if i in B:
+            X.append(XB[XB_count][0])
+            XB_count += 1
+    X = np.transpose(X)[np.newaxis]
+    X = X.T
     is_negative = True
     for i in range(len(XB)):
         if XB[i] >= 0:
@@ -90,7 +88,6 @@ def primal_simplex(A, b, c , B, N):
     
     pivot_count = 0
     while True:
-
         #compute z and check for optimality 
         ZB = 0
         AB = get_matrix_A(A,B)
@@ -100,12 +97,12 @@ def primal_simplex(A, b, c , B, N):
         AN = get_matrix_A(A,N)
         # cB = get_matrix_C(c,B)
         # cN = get_matrix_C(c,N)
-        
+        # print(AB)
         cB = c[B]
         cN = c[N]
         # print(cN)
         ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
-        print(ZN)
+        # print(ZN)
         is_optimal = True
         for item in ZN:
             if item < 0:
@@ -123,16 +120,28 @@ def primal_simplex(A, b, c , B, N):
         # print(B)
         # print(cN)
         enter_j = 0
-        for i in range(len(c)):
-            if i in N:
-                if c[i] > 0:
-                    enter_j = i
-                    break
+        # print(N)
+        for i in range(len(ZN)):
+            if ZN[i] < 0:
+                enter_j = N[i]
+                break
         # print(enter_j)
         #choose leaving variable
+        # print(AB)
         Aj = get_matrix_A(A,enter_j)
+       
+                
+        # print(Aj)
+        # print("")
+        # print(AB)
+        # print("")
+        # print(AB_inverse)
+        # print("")
         delta_XB = np.matmul(AB_inverse, Aj)
+        # print(delta_XB)
         delta_Xn = 0
+
+                
         is_unbounded = True
         for item in delta_XB:
             if item > 0:
@@ -144,56 +153,62 @@ def primal_simplex(A, b, c , B, N):
         t = 0
         count_leaving_var = 0
         leave_i = 0
-        i_index = 0
-        # print(delta_XB)
+        #choose leaving variable
         # print(XB)
-        for n in range(len(XB)):
-            
+        # print(delta_XB)
+        for n in range(len(X[B])):
             if(delta_XB[n] > 0):
-              temp_t = XB[n]/delta_XB[n]
+              temp_t = X[B][n]/delta_XB[n]
+            #   print(delta_XB[n])
+            #   print(n)
               if count_leaving_var == 0:
                 t = temp_t
                 i = n
                 leave_i = B[n]
+                count_leaving_var += 1
               else:
                   if t > temp_t:
                     t = temp_t
                     i = n
                     leave_i = B[n]
-            count_leaving_var += 1
-        print(t)
+            
+        # print("leave i: ")
+        # print(leave_i)
         if count_leaving_var == 0:
             print("error: no leaving variable")
             return 0
         # print(XB) 
-        print(enter_j + 1, end="")
+        print(enter_j, end="")
         print(" Entering ",end="")  
-        print(leave_i + 1, end="")
+        print(leave_i, end="")
         print(" Leaving ")  
-        XB = np.subtract(XB, t* delta_XB)
-        XB[i] = t
+        X[B] = np.subtract(X[B], t* delta_XB)
+        X[B][i] = t
+        # print(XB)
         # print(delta_XB)
         # for n in range(len(XB)):
         #     for item in N:
         #         if 
-        # B.append(enter_j)
-        # B.remove(leave_i)
-        B[B.index(leave_i)] = enter_j
+        B.append(enter_j)
+        B.remove(leave_i)
+        B.sort()
+        # B[B.index(leave_i)] = enter_j
         # B = list(map(lambda x: x.replace(leave_i, enter_j), B))
         # print("B = ", end="")
         # print(B)
         pivot_count += 1
-        # N.append(leave_i)
-        # N.remove(enter_j)
-        # N.sort()
-        N[N.index(enter_j)] = leave_i
+        N.append(leave_i)
+        N.remove(enter_j)
+        N.sort()
+        # N[N.index(enter_j)] = leave_i
         # print("N = ", end="")
         # print(N)
         # print("Pivot Count: ", end="")
         # print(pivot_count)
         
-
-
+        # if pivot_count > 2:
+        #     break
+            
 def get_matrix_C(c, vector):
     c_x = []
     new_list = []
