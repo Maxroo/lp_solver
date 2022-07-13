@@ -128,7 +128,8 @@ def primal_simplex(A, b, c , B, N):
             # print("b = ")
             # print(b)
             print("optimal")
-            print(optimal_value)
+            for item in optimal_value: print(item)
+            # print(optimal_value)
             for item in ZN: print (item, end=' ')
             print()
             return optimal_value
