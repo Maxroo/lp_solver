@@ -61,8 +61,9 @@ def read_file():
     
 def primal_simplex(A, b, c , B, N):
     #compute inital value of X
-    
+    # print(c)
     AB = get_matrix_A(A,B)
+    #calculate X
     XB = np.matmul(np.linalg.inv(AB), b)
     X = []
     XB_count = 0
@@ -74,6 +75,8 @@ def primal_simplex(A, b, c , B, N):
             XB_count += 1
     X = np.transpose(X)[np.newaxis]
     X = X.T
+    
+    #check if initial feasible
     is_negative = True
     for i in range(len(XB)):
         if XB[i] >= 0:
@@ -81,7 +84,8 @@ def primal_simplex(A, b, c , B, N):
     if is_negative:
         print("Infeasible")
         return "Infeasible"
-    
+    # print(c)
+    # print(A)
     pivot_count = 0
     while True:
         #compute z and check for optimality 
@@ -98,6 +102,14 @@ def primal_simplex(A, b, c , B, N):
         cN = c[N]
         # print(cN)
         ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
+        ZN_count = 0
+        Z = []
+        for n in range(len(N)+ len(B)):
+            if n in N:
+                Z.append(ZN[ZN_count])
+                ZN_count += 1
+            if n in B:
+                Z.append(0)
         # print(ZN)
         is_optimal = True
         for item in ZN:
@@ -105,7 +117,16 @@ def primal_simplex(A, b, c , B, N):
                 is_optimal = False
         if is_optimal:
             # optimal_value = np.dot(cB,np.multiply((AB_inverse),b))
-            optimal_value = np.multiply(np.transpose(cB),np.multiply((AB_inverse),b))
+            optimal_value = np.matmul(np.transpose(cB),np.matmul((AB_inverse),b))
+            # print(Z)
+            # print("B = ", end=" ")
+            # print(B)
+            # print("cB = ", end=" ")
+            # print(cB)
+            # print("AB = ")
+            # print(AB)
+            # print("b = ")
+            # print(b)
             print("optimal")
             print(optimal_value)
             for item in ZN:
@@ -180,19 +201,34 @@ def primal_simplex(A, b, c , B, N):
         print(leave_i, end="")
         print(" Leaving ")  
         X[B] = np.subtract(X[B], t* delta_XB)
-        X[B][i] = t
-        # print(XB)
-        # print(delta_XB)
-        # for n in range(len(XB)):
-        #     for item in N:
-        #         if 
-        B.append(enter_j)
-        B.remove(leave_i)
-        B.sort()
+        # X[B][i][0] = t
+        # print(X[B])
+        print(t)
+        # print(leave_i)
+        # print(X.T[0][leave_i])
+        temp_x = X.T
+        temp_x[0][enter_j] = t
+        # print("B = ", end="")
+        # print(B)
+        print(temp_x.T[B])
+        X = temp_x.T
+        print("X = ")
+        print(X)
+        # temp_x = X[B]
+        # temp_x[i][0] = t
+        # # print(temp_x)
+        # X[B] = temp_x
+        # print(i)
+        # print(t)
+        # print(leave_i)
+        
         # B[B.index(leave_i)] = enter_j
         # B = list(map(lambda x: x.replace(leave_i, enter_j), B))
         # print("B = ", end="")
         # print(B)
+        B.append(enter_j)
+        B.remove(leave_i)
+        B.sort()
         pivot_count += 1
         N.append(leave_i)
         N.remove(enter_j)
