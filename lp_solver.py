@@ -1,8 +1,4 @@
 #! /usr/bin/python
-from cgi import print_directory
-from hashlib import new
-from msilib.schema import BBControl
-import sys
 import numpy as np
 import fileinput
  
@@ -114,6 +110,7 @@ def primal_simplex(A, b, c , B, N):
             print(optimal_value)
             for item in ZN:
                 print(item, end="     ")
+            print()
             return optimal_value
         #choose entering variable
         # print(N)
