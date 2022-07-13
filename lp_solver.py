@@ -77,12 +77,12 @@ def primal_simplex(A, b, c , B, N):
     X = X.T
     
     #check if initial feasible
-    is_negative = True
-    for i in range(len(XB)):
-        if XB[i] >= 0:
-            is_negative = False
+    is_negative = False
+    for i in range(len(X[B])):
+        if X[B][i] < 0:
+            is_negative = True
     if is_negative:
-        print("Infeasible")
+        print("The lP is initally Infeasible")
         return "Infeasible"
     # print(c)
     # print(A)
@@ -127,6 +127,7 @@ def primal_simplex(A, b, c , B, N):
             # print(AB)
             # print("b = ")
             # print(b)
+            print("Done", pivot_count, "pivots")
             print("optimal")
             for item in optimal_value: print(item)
             # print(optimal_value)
@@ -196,10 +197,10 @@ def primal_simplex(A, b, c , B, N):
             print("error: no leaving variable")
             return 0
         # print(XB) 
-        print(enter_j, end="")
-        print(" Entering ",end="")  
-        print(leave_i, end="")
-        print(" Leaving ")  
+        # print(enter_j, end="")
+        # print(" Entering ",end="")  
+        # print(leave_i, end="")
+        # print(" Leaving ")  
         X[B] = np.subtract(X[B], t* delta_XB)
         # X[B][i][0] = t
         # print(X[B])
