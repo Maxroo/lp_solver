@@ -1,4 +1,5 @@
 #! /usr/bin/python
+from cgi import print_directory
 import sys
 import numpy as np
 import fileinput
@@ -68,13 +69,15 @@ def dual_simplex(A, b, c , B, N):
     cN = get_matrix_C(c,N)
     ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
     #ZN = np.subtract(np.dot(np.matmul(AB_inverse,AN),cB),cN)
-    print(ZN)
+    # print(ZN)
     return 0
 
 def primal_simplex(A, b, c , B, N):
     #compute inital value of X
+    
     AB = get_matrix_A(A,B)
     XB = np.matmul(np.linalg.inv(AB), b)
+    
     # print(XB)
     XN = 0
     is_negative = True
@@ -84,42 +87,111 @@ def primal_simplex(A, b, c , B, N):
     if is_negative:
         print("Infeasible")
         return "Infeasible"
+    
+    pivot_count = 0
     while True:
+
         #compute z and check for optimality 
         ZB = 0
         AB = get_matrix_A(A,B)
+        # print(B)
+        # print(AB)
         AB_inverse = np.linalg.inv(AB) 
         AN = get_matrix_A(A,N)
         # cB = get_matrix_C(c,B)
         # cN = get_matrix_C(c,N)
+        
         cB = c[B]
         cN = c[N]
+        # print(cN)
         ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
+        print(ZN)
         is_optimal = True
         for item in ZN:
             if item < 0:
                 is_optimal = False
         if is_optimal:
-            optimal_value = np.multiply(np.multiply(np.transpose(cB),AB_inverse),b)
+            # optimal_value = np.dot(cB,np.multiply((AB_inverse),b))
+            optimal_value = np.multiply(np.transpose(cB),np.multiply((AB_inverse),b))
+            print("optimal")
+            print(optimal_value)
+            for item in ZN:
+                print(item, end="     ")
             return optimal_value
         #choose entering variable
         # print(N)
         # print(B)
         # print(cN)
         enter_j = 0
-        largest_coefficient = 0
-        for item in N:
-            if c[item] > 0:
-                if largest_coefficient < c[item]:
-                    largest_coefficient = c[item]
-                    enter_j = item
-                break
+        for i in range(len(c)):
+            if i in N:
+                if c[i] > 0:
+                    enter_j = i
+                    break
         # print(enter_j)
-        
+        #choose leaving variable
         Aj = get_matrix_A(A,enter_j)
-        change_XB = np.matmul(AB_inverse, Aj)
-        print(Aj)
-        break
+        delta_XB = np.matmul(AB_inverse, Aj)
+        delta_Xn = 0
+        is_unbounded = True
+        for item in delta_XB:
+            if item > 0:
+                is_unbounded = False
+        if is_unbounded:
+            print("unbounded")
+            return "unbounded"
+        # print(XB)
+        t = 0
+        count_leaving_var = 0
+        leave_i = 0
+        i_index = 0
+        # print(delta_XB)
+        # print(XB)
+        for n in range(len(XB)):
+            
+            if(delta_XB[n] > 0):
+              temp_t = XB[n]/delta_XB[n]
+              if count_leaving_var == 0:
+                t = temp_t
+                i = n
+                leave_i = B[n]
+              else:
+                  if t > temp_t:
+                    t = temp_t
+                    i = n
+                    leave_i = B[n]
+            count_leaving_var += 1
+        print(t)
+        if count_leaving_var == 0:
+            print("error: no leaving variable")
+            return 0
+        # print(XB) 
+        print(enter_j + 1, end="")
+        print(" Entering ",end="")  
+        print(leave_i + 1, end="")
+        print(" Leaving ")  
+        XB = np.subtract(XB, t* delta_XB)
+        XB[i] = t
+        # print(delta_XB)
+        # for n in range(len(XB)):
+        #     for item in N:
+        #         if 
+        # B.append(enter_j)
+        # B.remove(leave_i)
+        B[B.index(leave_i)] = enter_j
+        # B = list(map(lambda x: x.replace(leave_i, enter_j), B))
+        # print("B = ", end="")
+        # print(B)
+        pivot_count += 1
+        # N.append(leave_i)
+        # N.remove(enter_j)
+        # N.sort()
+        N[N.index(enter_j)] = leave_i
+        # print("N = ", end="")
+        # print(N)
+        # print("Pivot Count: ", end="")
+        # print(pivot_count)
+        
 
 
 def get_matrix_C(c, vector):
