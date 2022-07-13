@@ -129,8 +129,7 @@ def primal_simplex(A, b, c , B, N):
             # print(b)
             print("optimal")
             print(optimal_value)
-            for item in ZN:
-                print(item, end="     ")
+            for item in ZN: print (item, end=' ')
             print()
             return optimal_value
         #choose entering variable
@@ -203,17 +202,17 @@ def primal_simplex(A, b, c , B, N):
         X[B] = np.subtract(X[B], t* delta_XB)
         # X[B][i][0] = t
         # print(X[B])
-        print(t)
+        # print(t)
         # print(leave_i)
         # print(X.T[0][leave_i])
         temp_x = X.T
         temp_x[0][enter_j] = t
         # print("B = ", end="")
         # print(B)
-        print(temp_x.T[B])
+        # print(temp_x.T[B])
         X = temp_x.T
-        print("X = ")
-        print(X)
+        # print("X = ")
+        # print(X)
         # temp_x = X[B]
         # temp_x[i][0] = t
         # # print(temp_x)
