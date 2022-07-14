@@ -63,8 +63,9 @@ def primal_simplex(A, b, c , B, N):
     #compute inital value of X
     # print(c)
     AB = get_matrix_A(A,B)
-    #calculate X
-    XB = np.matmul(np.linalg.inv(AB), b)
+    #calculate Xb and X
+    #revised method
+    XB = np.linalg.solve(AB,b)
     X = []
     XB_count = 0
     for i in range(len(B) + len(N)):
@@ -93,7 +94,7 @@ def primal_simplex(A, b, c , B, N):
         AB = get_matrix_A(A,B)
         # print(B)
         # print(AB)
-        AB_inverse = np.linalg.inv(AB) 
+        # AB_inverse = np.linalg.inv(AB) 
         AN = get_matrix_A(A,N)
         # cB = get_matrix_C(c,B)
         # cN = get_matrix_C(c,N)
@@ -101,7 +102,10 @@ def primal_simplex(A, b, c , B, N):
         cB = c[B]
         cN = c[N]
         # print(cN)
-        ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
+        #calculated ZN without inverse
+        v = np.linalg.solve(np.transpose(AB), cB)
+        ZN = np.subtract(np.matmul(np.transpose(AN), v), cN)
+        # ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
         ZN_count = 0
         Z = []
         for n in range(len(N)+ len(B)):
@@ -117,7 +121,9 @@ def primal_simplex(A, b, c , B, N):
                 is_optimal = False
         if is_optimal:
             # optimal_value = np.dot(cB,np.multiply((AB_inverse),b))
-            optimal_value = np.matmul(np.transpose(cB),np.matmul((AB_inverse),b))
+            v = np.linalg.solve(AB,b)
+            optimal_value = np.matmul(np.transpose(cB), v)
+            # optimal_value = np.matmul(np.transpose(cB),np.matmul((AB_inverse),b))
             # print(Z)
             # print("B = ", end=" ")
             # print(B)
@@ -156,7 +162,9 @@ def primal_simplex(A, b, c , B, N):
         # print("")
         # print(AB_inverse)
         # print("")
-        delta_XB = np.matmul(AB_inverse, Aj)
+        delta_XB = np.linalg.solve(AB, Aj)
+
+        # delta_XB = np.matmul(AB_inverse, Aj)
         # print(delta_XB)
         delta_Xn = 0
 
@@ -243,14 +251,6 @@ def primal_simplex(A, b, c , B, N):
         # if pivot_count > 2:
         #     break
             
-def get_matrix_C(c, vector):
-    c_x = []
-    new_list = []
-    for item in vector:
-        new_list.append(c[item])
-    c_x = np.transpose((new_list))
-    return c_x
-
 def get_matrix_A(A, vector):
     A_x = []
     # print(type(vector))
