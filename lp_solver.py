@@ -21,7 +21,7 @@ def main():
     # print(B)
     # print(N)
     #dual_simplex(A,b,c, B, N)
-    primal_simplex(A,b,c, B, N)
+    primal_simplex(A,b,c, B, N, var_num)
     
 def read_file():
     var_num = 0
@@ -59,7 +59,7 @@ def read_file():
     A = np.array(constrain_function_list)
     return c, A, b, var_num
     
-def primal_simplex(A, b, c , B, N):
+def primal_simplex(A, b, c , B, N, var_num):
     #compute inital value of X
     # print(c)
     AB = get_matrix_A(A,B)
@@ -137,7 +137,8 @@ def primal_simplex(A, b, c , B, N):
             print("optimal")
             for item in optimal_value: print(item)
             # print(optimal_value)
-            for item in ZN: print (item, end=' ')
+            for i in range(var_num):
+                print(X[i][0], end=" ")
             print()
             return optimal_value
         #choose entering variable
