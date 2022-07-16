@@ -2,10 +2,10 @@
 echo "netlib_adlittle"
 python3 lp_solver.py < test_LPs_volume1/input/netlib_adlittle.txt
 echo
-echo "netlib_afiro"
+echo \n"netlib_afiro"
 python3 lp_solver.py < test_LPs_volume1/input/netlib_afiro.txt
 echo
-echo "netlib_bgprtr"
+echo \n"netlib_bgprtr"
 python3 lp_solver.py < test_LPs_volume1/input/netlib_bgprtr.txt
 echo
 echo "netlib_itest2"
