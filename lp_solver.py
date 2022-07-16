@@ -1,4 +1,5 @@
 #! /usr/bin/python
+from pickle import FALSE
 import numpy as np
 import fileinput
  
@@ -6,7 +7,7 @@ import fileinput
 
 
 def main():
-    print("-------------------------------------------------------------------------------------------")
+    # print("--------------------------------------------------------------------------------------------------------------")
     c,A,b, var_num = read_file()
     B = [] #initial B = all constrains
     N = [] #initial N = all vars
@@ -15,13 +16,9 @@ def main():
             N.append(i)
         else:
             B.append(i)
-    # print (A)
-    # print (b)
-    # print (c)
-    # print(B)
-    # print(N)
-    #dual_simplex(A,b,c, B, N)
-    primal_simplex(A,b,c, B, N, var_num)
+    return_value, B_p, N_p = primal_simplex(A,b,c, B, N, var_num)
+    if return_value == -1:
+        primal_simplex(A,b,c, B_p, N_p, var_num)
     
 def read_file():
     var_num = 0
@@ -76,15 +73,29 @@ def primal_simplex(A, b, c , B, N, var_num):
             XB_count += 1
     X = np.transpose(X)[np.newaxis]
     X = X.T
-    
     #check if initial feasible
-    is_negative = False
     for i in range(len(X[B])):
         if X[B][i] < 0:
-            is_negative = True
-    if is_negative:
-        print("The lP is initally Infeasible")
-        return "Infeasible"
+            # print("The lP is Primal Infeasible")
+            # print("calling dual simplex method")
+            is_dual_feasible = True
+            for item in c:
+                if item > 0:
+                    is_dual_feasible = False
+            if is_dual_feasible:
+                return dual_simplex(A, b, c , B, N, var_num, is_dual_feasible)
+            # print(c)
+            zero_c = []
+            for n in range(len(c)):
+                if n in N:
+                    zero_c.append(-1)
+                else:
+                    zero_c.append(0)
+            zero_c = np.array(zero_c)
+            # print(c)
+            # return dual_simplex(A, b, c , B, N, var_num)
+            return dual_simplex(A, b, zero_c , B, N, var_num, is_dual_feasible)
+    # print(X)
     # print(c)
     # print(A)
     pivot_count = 0
@@ -101,11 +112,12 @@ def primal_simplex(A, b, c , B, N, var_num):
         # print(AB)
         cB = c[B]
         cN = c[N]
+        # print(cB)
+        # print(cN)
         # print(cN)
         #calculated ZN without inverse
         v = np.linalg.solve(np.transpose(AB), cB)
         ZN = np.subtract(np.matmul(np.transpose(AN), v), cN)
-        # ZN = np.subtract(np.matmul(np.transpose(np.matmul(AB_inverse, AN)), cB), cN)
         ZN_count = 0
         Z = []
         for n in range(len(N)+ len(B)):
@@ -115,7 +127,9 @@ def primal_simplex(A, b, c , B, N, var_num):
             if n in B:
                 Z.append(0)
         # print(ZN)
+        # print(Z)
         is_optimal = True
+        # print(XB)
         for item in ZN:
             if item < 0:
                 is_optimal = False
@@ -133,7 +147,7 @@ def primal_simplex(A, b, c , B, N, var_num):
             # print(AB)
             # print("b = ")
             # print(b)
-            print("Done", pivot_count, "pivots")
+            # print("Done", pivot_count, "pivots")
             print("optimal")
             for item in optimal_value: print(item)
             # print(optimal_value)
@@ -167,7 +181,6 @@ def primal_simplex(A, b, c , B, N, var_num):
 
         # delta_XB = np.matmul(AB_inverse, Aj)
         # print(delta_XB)
-        delta_Xn = 0
 
                 
         is_unbounded = True
@@ -222,20 +235,6 @@ def primal_simplex(A, b, c , B, N, var_num):
         # print(B)
         # print(temp_x.T[B])
         X = temp_x.T
-        # print("X = ")
-        # print(X)
-        # temp_x = X[B]
-        # temp_x[i][0] = t
-        # # print(temp_x)
-        # X[B] = temp_x
-        # print(i)
-        # print(t)
-        # print(leave_i)
-        
-        # B[B.index(leave_i)] = enter_j
-        # B = list(map(lambda x: x.replace(leave_i, enter_j), B))
-        # print("B = ", end="")
-        # print(B)
         B.append(enter_j)
         B.remove(leave_i)
         B.sort()
@@ -243,14 +242,143 @@ def primal_simplex(A, b, c , B, N, var_num):
         N.append(leave_i)
         N.remove(enter_j)
         N.sort()
-        # N[N.index(enter_j)] = leave_i
-        # print("N = ", end="")
-        # print(N)
-        # print("Pivot Count: ", end="")
-        # print(pivot_count)
         
-        # if pivot_count > 2:
-        #     break
+        
+def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
+    #compute inital value of X
+    AB = get_matrix_A(A,B)
+    AN = get_matrix_A(A,N)
+    #calculate Xb and X
+    #revised method
+    v = np.linalg.solve(np.transpose(AB), c[B])
+    ZN = np.subtract(np.matmul(np.transpose(AN), v), c[N])
+    ZN_count = 0
+    Z = []
+    # print(ZN)
+    for n in range(len(N)+ len(B)):
+        if n in N:
+            Z.append(ZN[ZN_count])
+            ZN_count += 1
+        if n in B:
+            Z.append(0)
+    Z = np.transpose(Z)
+    # print(Z[B])
+    #check if initial feasible
+    # print(Z)
+    for item in ZN:
+        if item < 0:
+            print("Infeasible")
+            return "Infeasible"
+        
+    pivot_count = 0
+    while True:
+        AB = get_matrix_A(A,B)
+        AN = get_matrix_A(A,N)        
+        XB = np.linalg.solve(AB,b)
+        X = []
+        XB_count = 0
+        for i in range(len(B) + len(N)):
+            if i in N:
+                X.append(0.0)
+            if i in B:
+                X.append(XB[XB_count][0])
+                XB_count += 1
+        X = np.transpose(X)[np.newaxis]
+        X = X.T
+        # print(X)
+        is_optimal = True
+        # print("XB =", X[B])
+        for item in X[B]:
+           if item < 0:
+               is_optimal = False
+        if is_optimal:
+            # print("Is_dual_feasible:", is_dual_feasible)
+            if not is_dual_feasible:
+                # print(B,N)
+                # return dual_simplex(A,b,c,B,N,var_num,True)
+                return -1, B, N
+            v = np.linalg.solve(AB,b)
+            optimal_value = np.matmul(np.transpose(c[B]), v)
+            print("Done", pivot_count, "pivots")
+            print("optimal")
+            for item in optimal_value: print(item)
+            # print(optimal_value)
+            for i in range(var_num):
+                print(X[i][0], end=" ")
+            print()
+            return optimal_value
+        #choose entering variable
+        enter_i = 0
+        # print(N)
+        # print(X[B])
+        Zi = 0
+        for i in range(len(X[B])):
+            if X[B][i] < 0:
+                Zi = i
+                enter_i = B[i]
+                break
+        #choose leaving variable
+        # print(AB)
+        U = []
+        for k in range(len(Z[B])):
+            if k == Zi:
+                U.append(1)
+            else:
+                U.append(0)
+                
+        v = np.linalg.solve(np.transpose(AB), U)
+        delta_ZN = np.matmul(-np.transpose(AN), v)
+        
+        # print(delta_ZN)
+        is_unbounded = True
+        for item in delta_ZN:
+            if item >= 0:
+                is_unbounded = False
+        if is_unbounded:
+            print("LP is fully Infeasible")
+            return "dual unbounded"
+        s = 0
+        count_leaving_var = 0
+        leave_j = 0
+        #choose leaving variable
+        # print(XB)
+        for n in range(len(Z[N])):
+            if(delta_ZN[n] > 0):
+              temp_s = Z[N][n]/delta_ZN[n]
+            #   print(temp_s)
+            #   print(delta_XB[n])
+            #   print(n)
+              if count_leaving_var == 0:
+                s = temp_s
+                # i = n
+                leave_j = N[n]
+                count_leaving_var += 1
+              else:
+                  if s > temp_s:
+                    s = temp_s
+                    # i = n
+                    leave_j = N[n]
+        # print("s = ", s)
+        if count_leaving_var == 0:
+            print("error: no leaving variable")
+            return 0
+        Z[N] = np.subtract(Z[N], s* delta_ZN)
+        # print("Z =", Z)
+        Z[enter_i] = s
+        # print("Z =", Z)
+        # print(enter_i ,"entering")
+        # print(leave_j ,"leaving")
+        B.append(leave_j)
+        B.remove(enter_i)
+        B.sort()
+        pivot_count += 1
+        N.append(enter_i)
+        N.remove(leave_j)
+        N.sort()
+        # print("B =", B)
+        # print("N =", N)
+        # print("-----------------------------------------")
+        # return 0
             
 def get_matrix_A(A, vector):
     A_x = []
