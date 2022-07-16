@@ -1,5 +1,4 @@
 #! /usr/bin/python
-from pickle import FALSE
 import numpy as np
 import fileinput
  
@@ -7,7 +6,6 @@ import fileinput
 
 
 def main():
-    # print("--------------------------------------------------------------------------------------------------------------")
     c,A,b, var_num = read_file()
     B = [] #initial B = all constrains
     N = [] #initial N = all vars
@@ -17,7 +15,13 @@ def main():
         else:
             B.append(i)
     return_value, B_p, N_p = primal_simplex(A,b,c, B, N, var_num)
-    if return_value == -1:
+    """
+    Retrun Value:   -2 LP is Infeasible
+                    -1 Unbounded
+                    0  Optimal 
+                    1  Call primal simplex method again with B' N' after getting feasible LP from two face method
+    """
+    if return_value == 1:
         primal_simplex(A,b,c, B_p, N_p, var_num)
     
 def read_file():
@@ -93,7 +97,6 @@ def primal_simplex(A, b, c , B, N, var_num):
                     zero_c.append(0)
             zero_c = np.array(zero_c)
             # print(c)
-            # return dual_simplex(A, b, c , B, N, var_num)
             return dual_simplex(A, b, zero_c , B, N, var_num, is_dual_feasible)
     # print(X)
     # print(c)
@@ -154,7 +157,7 @@ def primal_simplex(A, b, c , B, N, var_num):
             for i in range(var_num):
                 print(X[i][0], end=" ")
             print()
-            return optimal_value
+            return 0, B, N
         #choose entering variable
         # print(N)
         # print(B)
@@ -189,7 +192,7 @@ def primal_simplex(A, b, c , B, N, var_num):
                 is_unbounded = False
         if is_unbounded:
             print("unbounded")
-            return "unbounded"
+            return -1, B, N
         # print(XB)
         t = 0
         count_leaving_var = 0
@@ -215,9 +218,6 @@ def primal_simplex(A, b, c , B, N, var_num):
             
         # print("leave i: ")
         # print(leave_i)
-        if count_leaving_var == 0:
-            print("error: no leaving variable")
-            return 0
         # print(XB) 
         # print(enter_j, end="")
         # print(" Entering ",end="")  
@@ -267,8 +267,8 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
     # print(Z)
     for item in ZN:
         if item < 0:
-            print("Infeasible")
-            return "Infeasible"
+            print("Dual infeasible")
+            return -2, B, N
         
     pivot_count = 0
     while True:
@@ -292,21 +292,17 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
            if item < 0:
                is_optimal = False
         if is_optimal:
-            # print("Is_dual_feasible:", is_dual_feasible)
             if not is_dual_feasible:
-                # print(B,N)
-                # return dual_simplex(A,b,c,B,N,var_num,True)
-                return -1, B, N
+                return 1, B, N
             v = np.linalg.solve(AB,b)
             optimal_value = np.matmul(np.transpose(c[B]), v)
-            print("Done", pivot_count, "pivots")
             print("optimal")
             for item in optimal_value: print(item)
             # print(optimal_value)
             for i in range(var_num):
                 print(X[i][0], end=" ")
             print()
-            return optimal_value
+            return 0, B, N
         #choose entering variable
         enter_i = 0
         # print(N)
@@ -335,8 +331,8 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
             if item >= 0:
                 is_unbounded = False
         if is_unbounded:
-            print("LP is fully Infeasible")
-            return "dual unbounded"
+            print("infeasible")
+            return -3, B, N
         s = 0
         count_leaving_var = 0
         leave_j = 0
@@ -359,9 +355,6 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
                     # i = n
                     leave_j = N[n]
         # print("s = ", s)
-        if count_leaving_var == 0:
-            print("error: no leaving variable")
-            return 0
         Z[N] = np.subtract(Z[N], s* delta_ZN)
         # print("Z =", Z)
         Z[enter_i] = s
