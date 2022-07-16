@@ -1,11 +1,12 @@
 #! /usr/bin/python
 import sys
+from tkinter.messagebox import YES
 import numpy as np
 import fileinput
  
 #np.__version__
 
-
+tolerance_var = 7e-3
 
 def main():
     """
@@ -68,13 +69,12 @@ def read_file():
     
 def primal_simplex(A, b, c , B, N, var_num):
     #compute inital value of X
-    # print(c)
     AB = get_matrix_A(A,B)
     #calculate Xb and X
     #revised method
     XB = np.linalg.solve(AB,b)
     for item in (XB):
-        if (item[0] >= -1.1102230246251565e-10 and  item[0] <= 1.1102230246251565e-10):
+        if (item[0] >= -tolerance_var and  item[0] <= tolerance_var):
             item[0] = 0
     X = []
     XB_count = 0
@@ -95,7 +95,6 @@ def primal_simplex(A, b, c , B, N, var_num):
                     is_dual_feasible = False
             if is_dual_feasible:
                 return dual_simplex(A, b, c , B, N, var_num, is_dual_feasible)
-            # print(c)
             zero_c = []
             for n in range(len(c)):
                 if n in N:
@@ -123,7 +122,7 @@ def primal_simplex(A, b, c , B, N, var_num):
         v = np.linalg.solve(np.transpose(AB), cB)
         ZN = np.subtract(np.matmul(np.transpose(AN), v), cN)
         for i in range(len(ZN)):
-            if ( ZN[i] >= -1.1102230246251565e-10 and  ZN[i] <= 1.1102230246251565e-10):
+            if ( ZN[i] >= -tolerance_var and  ZN[i] <= tolerance_var):
                  ZN[i] = 0
         ZN_count = 0
         Z = []
@@ -145,6 +144,7 @@ def primal_simplex(A, b, c , B, N, var_num):
             for item in optimal_value: sys.stdout.write("%g\n"% item)
             for i in range(var_num):
                 sys.stdout.write("%g " % (X[i][0]))
+            sys.stdout.write("\n")
             return 0, B, N
 
         enter_j = 0
@@ -157,7 +157,7 @@ def primal_simplex(A, b, c , B, N, var_num):
         Aj = get_matrix_A(A,enter_j)
         delta_XB = np.linalg.solve(AB, Aj)
         for i in range(len(delta_XB)):
-            if ( delta_XB[i] >= -1.1102230246251565e-10 and  delta_XB[i] <= 1.1102230246251565e-10):
+            if ( delta_XB[i] >= -tolerance_var and  delta_XB[i] <= tolerance_var):
                 delta_XB[i] = 0
         
         is_unbounded = True
@@ -186,9 +186,11 @@ def primal_simplex(A, b, c , B, N, var_num):
                     leave_i = B[n]
                     
         X[B] = np.subtract(X[B], t* delta_XB)
-
         temp_x = X.T
         temp_x[0][enter_j] = t
+        for i in range(len(temp_x[0])):
+            if ( temp_x[0][i] >= -tolerance_var and  temp_x[0][i] <= tolerance_var):
+                temp_x[0][i] = 0
 
         X = temp_x.T
         B.append(enter_j)
@@ -212,7 +214,7 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
     v = np.linalg.solve(np.transpose(AB), c[B])
     ZN = np.subtract(np.matmul(np.transpose(AN), v), c[N])
     for i in range(len(ZN)):
-        if ( ZN[i] >= -1.1102230246251565e-10 and  ZN[i] <= 1.1102230246251565e-10):
+        if ( ZN[i] >= -tolerance_var and  ZN[i] <= tolerance_var):
             ZN[i] = 0
     ZN_count = 0
     Z = []
@@ -235,7 +237,7 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
         AN = get_matrix_A(A,N)        
         XB = np.linalg.solve(AB,b)
         for item in (XB):
-            if (item[0] >= -1.1102230246251565e-10 and  item[0] <= 1.1102230246251565e-10):
+            if (item[0] >= -tolerance_var and  item[0] <= tolerance_var):
                 item[0] = 0
 
         X = []
@@ -262,7 +264,7 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
             for item in optimal_value: sys.stdout.write("%g\n" % item)
             for i in range(var_num):
                 sys.stdout.write("%g " % (X[i][0]))
-            print()
+            sys.stdout.write("\n")
             return 0, B, N
         #choose entering variable
         enter_i = 0
@@ -279,7 +281,7 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
         v = np.linalg.solve(np.transpose(AB), U)
         delta_ZN = np.matmul(-np.transpose(AN), v)
         for i in range(len(delta_ZN)):
-            if ( delta_ZN[i] >= -1.1102230246251565e-10 and  delta_ZN[i] <= 1.1102230246251565e-10):
+            if ( delta_ZN[i] >= -tolerance_var and  delta_ZN[i] <= tolerance_var):
                 delta_ZN[i] = 0
         is_unbounded = True
         for item in delta_ZN:
@@ -310,17 +312,21 @@ def dual_simplex(A, b, c, B, N, var_num, is_dual_feasible):
             sys.stdout.write("infeasible")
             return -2, B, N
         Z[N] = np.subtract(Z[N], s* delta_ZN)
+        temp_zn = Z[N]
+        for i in range(len(temp_zn)):
+            if ( temp_zn[i] >= -tolerance_var and temp_zn[i] <= tolerance_var):
+                temp_zn[i] = 0
+        Z[N] = temp_zn
         Z[enter_i] = s
-
+        pivot_count += 1
+        # if(pivot_count%100 == 0):
+        #     print(pivot_count) 
         B.append(leave_j)
         B.remove(enter_i)
         B.sort()
-        pivot_count += 1
         N.append(enter_i)
         N.remove(leave_j)
         N.sort()
-        # if(pivot_count%100 == 0):
-        #     print(pivot_count) 
 
 
 
